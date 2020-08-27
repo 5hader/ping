@@ -26,6 +26,7 @@ func main() {
 	size := flag.Int("-s", 0, "")
 	deadline := flag.Float64("w", 0, "")
 	timeout := flag.Float64("W", 1, "")
+	tos := flag.Int("Q", 0, "")
 
 	flag.Usage = func() {
 		fmt.Print(usage)
@@ -96,6 +97,7 @@ func main() {
 		Dst:  net.ParseIP(host.String()),
 		Src:  net.ParseIP(getAddr(*iface)),
 		Data: data,
+		QoS:  *tos,
 	}
 	for *count == 0 || packetsSent < *count {
 		select {
@@ -303,6 +305,22 @@ OPTIONS
        -W timeout
            Time to wait for a response, in seconds. The option affects only
            timeout in absence of any responses.
+
+       -Q tos
+           Set Quality of Service -related bits in ICMP datagrams. tos can be
+           either decimal or hex number. Traditionally (RFC1349), these have 
+           been interpreted as: 0 for reserved (currently being redefined as 
+           congestion control), 1-4 for Type of Service and 5-7 for Precedence.
+           Possible settings for Type of Service are: minimal cost: 0x02, 
+           reliability: 0x04, throughput: 0x08, low delay: 0x10. Multiple TOS 
+           bits should not be set simultaneously. Possible settings for 
+           special Precedence range from priority (0x20) to net control (0xe0).
+           You must be root (CAP_NET_ADMIN capability) to use Critical or 
+           higher precedence value. You cannot set bit 0x01 (reserved) unless 
+           ECN has been enabled in the kernel. In RFC2474, these fields has 
+           been redefined as 8-bit Differentiated Services (DS), consisting of:
+           bits 0-1 of separate data (ECN will be used, here), and bits 2-7 of 
+           Differentiated Services Codepoint (DSCP).
 
 EXAMPLES
        # ping google continuously

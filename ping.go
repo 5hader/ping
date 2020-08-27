@@ -30,6 +30,7 @@ type Request struct {
 	Data []byte // Data is generally an arbitrary byte string of size 56. It is used to set icmp.Echo.Data.
 	Dst  net.IP // The address of the host to which the message should be sent.
 	Src  net.IP // The address of the host that composes the ICMP message.
+	QoS  int    // Quality-of-Service is passed to IPv4 "Type-of-Service" or IPv6 "Traffic Class" field
 }
 
 // Response represents an icmp echo response received by a client.
@@ -355,8 +356,14 @@ func send(ctx context.Context, conn *icmp.PacketConn, req *Request) (time.Time, 
 		if req.proto() == protocolIPv4ICMP {
 			msg.Type = ipv4.ICMPTypeEcho
 			conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst, true)
+			if req.QoS != 0 {
+				conn.IPv4PacketConn().SetTOS(req.QoS)
+			}
 		} else {
 			conn.IPv6PacketConn().SetControlMessage(ipv6.FlagHopLimit|ipv6.FlagSrc|ipv6.FlagDst, true)
+			if req.QoS != 0 {
+				conn.IPv6PacketConn().SetTrafficClass(req.QoS)
+			}
 		}
 
 		msgBytes, err := msg.Marshal(nil)
